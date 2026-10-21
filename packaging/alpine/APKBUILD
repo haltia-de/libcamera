@@ -6,6 +6,8 @@
 # above Alpine's 0.7.1-r1, so apk takes it; drop it once the patches are
 # in a libcamera release Alpine ships. No qcam (Qt 6): the tablet has no
 # use for it and it is the longest part of the build.
+# The software ISP stays on the CPU (no softisp-gpu): its GPU path needs
+# OpenGL ES 3, which the tablet's SGX544 cannot give programs.
 pkgname=libcamera
 _pkgver=0.7.1
 pkgver=${_pkgver}_p1
@@ -82,6 +84,7 @@ build() {
 		-Dwerror=false \
 		-Ddocumentation=disabled \
 		-Dqcam=disabled \
+		-Dsoftisp-gpu=disabled \
 		. output
 	meson compile -C output
 }
