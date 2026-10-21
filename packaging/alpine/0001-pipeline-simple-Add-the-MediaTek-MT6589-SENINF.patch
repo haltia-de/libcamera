@@ -1,0 +1,28 @@
+From 018c84edeaa9c3491a7182b2216f1815213aca73 Mon Sep 17 00:00:00 2001
+From: Mikhail-Nevskiy <noreply@github.com>
+Date: Wed, 21 Oct 2026 23:24:46 +0300
+Subject: [PATCH 1/3] pipeline: simple: Add the MediaTek MT6589 SENINF
+
+The MT6589's camera interface (mt6589-seninf, Lenovo YOGA Tablet 10
+B8000-H) captures raw Bayer through ISP pass 1 into memory with no
+usable ISP behind it, so the simple pipeline handler runs it with the
+software ISP.
+---
+ src/libcamera/pipeline/simple/simple.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
+index c6fe12d..45c7671 100644
+--- a/src/libcamera/pipeline/simple/simple.cpp
++++ b/src/libcamera/pipeline/simple/simple.cpp
+@@ -261,6 +261,7 @@ static const SimplePipelineInfo supportedDevices[] = {
+ 	{ "intel-ipu6", {}, true },
+ 	{ "intel-ipu7", {}, true },
+ 	{ "j721e-csi2rx", {}, true },
++	{ "mt6589-seninf", {}, true },
+ 	{ "mtk-seninf", { { "mtk-mdp", 3 } }, false },
+ 	{ "mxc-isi", {}, false },
+ 	{ "qcom-camss", {}, true },
+-- 
+2.43.0
+
