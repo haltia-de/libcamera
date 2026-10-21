@@ -1,0 +1,62 @@
+From baf4fd66f307cf5072637be71237a7cb6e9deb75 Mon Sep 17 00:00:00 2001
+From: Mikhail-Nevskiy <noreply@github.com>
+Date: Wed, 21 Oct 2026 23:24:46 +0300
+Subject: [PATCH 2/3] libcamera: sensor: Add OmniVision OV9760
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The OV9760 is a 1/5" 1.6 MP sensor with 1.75 µm pixels. Its analogue
+gain register is linear with 16 as 1x, and the black level is the usual
+OmniVision 0x40 at 10 bits. No test pattern is known to work.
+---
+ src/ipa/libipa/camera_sensor_helper.cpp          | 16 ++++++++++++++++
+ .../sensor/camera_sensor_properties.cpp          |  5 +++++
+ 2 files changed, 21 insertions(+)
+
+diff --git a/src/ipa/libipa/camera_sensor_helper.cpp b/src/ipa/libipa/camera_sensor_helper.cpp
+index e3e3e53..027cd4f 100644
+--- a/src/ipa/libipa/camera_sensor_helper.cpp
++++ b/src/ipa/libipa/camera_sensor_helper.cpp
+@@ -689,6 +689,22 @@ public:
+ };
+ REGISTER_CAMERA_SENSOR_HELPER("ov4689", CameraSensorHelperOv4689)
+ 
++class CameraSensorHelperOv9760 : public CameraSensorHelper
++{
++public:
++	CameraSensorHelperOv9760()
++	{
++		/*
++		 * OmniVision's usual BLC target, 0x40 at 10 bits; the darkest
++		 * pixels of dark frames sit there on the Lenovo B8000-H.
++		 */
++		blackLevel_ = 4096;
++		/* Gain register 0x350a/b: 16 is 1x, linear. */
++		gain_ = AnalogueGainLinear{ 1, 0, 0, 16 };
++	}
++};
++REGISTER_CAMERA_SENSOR_HELPER("ov9760", CameraSensorHelperOv9760)
++
+ class CameraSensorHelperOv5640 : public CameraSensorHelper
+ {
+ public:
+diff --git a/src/libcamera/sensor/camera_sensor_properties.cpp b/src/libcamera/sensor/camera_sensor_properties.cpp
+index b217363..dc61c2c 100644
+--- a/src/libcamera/sensor/camera_sensor_properties.cpp
++++ b/src/libcamera/sensor/camera_sensor_properties.cpp
+@@ -485,6 +485,11 @@ const CameraSensorProperties *CameraSensorProperties::get(const std::string &sen
+ 				.hblankDelay = 2
+ 			},
+ 		} },
++		{ "ov9760", {
++			.unitCellSize = { 1750, 1750 },
++			.testPatternModes = {},
++			.sensorDelays = { },
++		} },
+ 		{ "ov13858", {
+ 			.unitCellSize = { 1120, 1120 },
+ 			.testPatternModes =  {
+-- 
+2.43.0
+

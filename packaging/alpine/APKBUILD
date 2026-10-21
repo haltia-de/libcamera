@@ -1,0 +1,156 @@
+# Contributor: Luca Weiss <luca@lucaweiss.eu>
+# Maintainer: Haltia <noreply@github.com>
+# Alpine's community/libcamera with three patches for the front camera of
+# the Lenovo YOGA Tablet 10 (B8000-H): the MT6589 SENINF in the simple
+# pipeline (software ISP) and the OmniVision OV9760. The _p suffix puts it
+# above Alpine's 0.7.1-r1, so apk takes it; drop it once the patches are
+# in a libcamera release Alpine ships. No qcam (Qt 6): the tablet has no
+# use for it and it is the longest part of the build.
+pkgname=libcamera
+_pkgver=0.7.1
+pkgver=${_pkgver}_p1
+pkgrel=0
+pkgdesc="Linux camera framework"
+url="https://libcamera.org/"
+arch="all"
+license="LGPL-2.1-or-later AND GPL-2.0-or-later"
+# upstream calls 'date' with a non-POSIX option so we pull in coreutils
+makedepends="
+	coreutils
+	doxygen
+	eudev-dev
+	glib-dev
+	gnutls-dev
+	graphviz
+	gst-plugins-base-dev
+	gtest-dev
+	libevent-dev
+	libjpeg-turbo-dev
+	libpisp-dev
+	libunwind-dev
+	libyuv-dev
+	linux-headers
+	meson
+	py3-jinja2
+	py3-ply
+	py3-pybind11-dev
+	py3-sphinx
+	py3-sphinxcontrib-doxylink
+	py3-yaml
+	python3-dev
+	yaml-dev
+	"
+subpackages="
+	$pkgname-dbg
+	$pkgname-dev
+	$pkgname-gstreamer
+	$pkgname-v4l2
+	$pkgname-tools
+	py3-$pkgname-pyc:pyc
+	py3-$pkgname:py3
+	"
+source="https://gitlab.freedesktop.org/camera/libcamera/-/archive/v$_pkgver/libcamera-v$_pkgver.tar.gz
+	0001-pipeline-simple-Add-the-MediaTek-MT6589-SENINF.patch
+	0002-libcamera-sensor-Add-OmniVision-OV9760.patch
+	0003-ipa-simple-Add-a-tuning-file-for-the-OV9760.patch
+	"
+builddir="$srcdir/$pkgname-v$_pkgver"
+# gstreamer tests fail
+# manual strip because ipa .sign files depend on the file contents- have to re-sign after strip
+options="!strip !check"
+
+case "$CARCH" in
+arm*|aarch64)
+	subpackages="$subpackages $pkgname-raspberrypi"
+	;;
+esac
+
+case "$CARCH" in
+ppc64le|s390x|riscv64|loongarch64)
+	# doesn't install any ipa
+	;;
+*)
+	depends="$pkgname-ipa=$pkgver-r$pkgrel"
+	subpackages="$subpackages $pkgname-ipa"
+	;;
+esac
+
+build() {
+	abuild-meson \
+		-Dpipelines=auto,virtual \
+		-Dv4l2=true \
+		-Dwerror=false \
+		-Ddocumentation=disabled \
+		-Dqcam=disabled \
+		. output
+	meson compile -C output
+}
+
+check() {
+	meson test -C output --print-errorlogs
+}
+
+package() {
+	DESTDIR="$pkgdir" meson install --no-rebuild -C output
+
+	# manual strip first..
+	scanelf --recursive \
+		--nobanner \
+		--etype "ET_DYN,ET_EXEC" \
+		--format "%F" \
+		"$pkgdir" \
+		| while read -r file; do
+			strip "$file"
+	done
+}
+
+ipa() {
+	depends=""
+	amove usr/lib/libcamera
+	# then sign ipa's
+	local ipa
+	for ipa in "$subpkgdir"/usr/lib/libcamera/ipa/ipa*.so; do
+		msg "signing $ipa"
+		"$builddir"/src/ipa/ipa-sign.sh \
+			"$(find "$builddir"/output -type f -iname "*ipa-priv-key.pem")" \
+			"$ipa" \
+			"$ipa".sign
+	done
+}
+
+gstreamer() {
+	depends=""
+	amove usr/lib/gstreamer-1.0
+}
+
+v4l2() {
+	depends=""
+	amove usr/libexec/libcamera/v4l2-compat.so
+}
+
+raspberrypi() {
+	depends=""
+	amove usr/share/libcamera/ipa/rpi
+	amove usr/libexec/libcamera/raspberrypi_ipa_proxy
+	amove usr/share/libcamera/pipeline/rpi/vc4
+}
+
+tools() {
+	depends=""
+	amove usr/bin/cam
+	amove usr/bin/lc-compliance
+}
+
+py3() {
+	pkgdesc="$pkgname (python bindings)"
+	depends="python3"
+
+	amove usr/lib/python*
+}
+
+sha512sums="
+0e886021a3bbd668184b581248b9d89a8e909360a7f138237a2c03b41b477cb255bd6daf4932fdebf86c3410b4deccc4c5db93264ed0c6c9969076cdbae8a77b  libcamera-v0.7.1.tar.gz
+6122a77d839aba98b6dd1377e290d873825b6429127612da74f2e5b036c99b679aa1700d998fbb6c8cf3a6d9e295698a3267c324245409980557fb0aa04188d0  0001-pipeline-simple-Add-the-MediaTek-MT6589-SENINF.patch
+09d8fb30bdf25b504178221dbca3bb19f59918dbabe77b38ab0ddbf327faafbbe0ef979a68664912e4fd4a7d73107f29c9e01dd8b0a1918d5c465265edcb0509  0002-libcamera-sensor-Add-OmniVision-OV9760.patch
+5831990b857eb44c75803294d5c06347495475332cbfa907b6c0172c8b6a24033e5a5790e4c90c30b1157e87ea1489f5521bd88b6ff1747a72773a33aa59a3d3  0003-ipa-simple-Add-a-tuning-file-for-the-OV9760.patch
+"
