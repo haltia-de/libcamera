@@ -1,4 +1,4 @@
-From 930026090f2824d9e80b6deb6cbdfe830c3c671d Mon Sep 17 00:00:00 2001
+From 3f32dd69b7645b8ddc404ce9b082e872e2197e1f Mon Sep 17 00:00:00 2001
 From: Mikhail-Nevskiy <noreply@github.com>
 Date: Wed, 21 Oct 2026 23:24:46 +0300
 Subject: [PATCH 3/3] ipa: simple: Add a tuning file for the OV9760
@@ -7,8 +7,8 @@ The uncalibrated algorithms without the colour correction matrix, which
 is too slow on the MT6589's Cortex-A7 cores untuned.
 ---
  src/ipa/simple/data/meson.build |  1 +
- src/ipa/simple/data/ov9760.yaml | 10 ++++++++++
- 2 files changed, 11 insertions(+)
+ src/ipa/simple/data/ov9760.yaml | 13 +++++++++++++
+ 2 files changed, 14 insertions(+)
  create mode 100644 src/ipa/simple/data/ov9760.yaml
 
 diff --git a/src/ipa/simple/data/meson.build b/src/ipa/simple/data/meson.build
@@ -25,16 +25,19 @@ index 92795ee..f178477 100644
  
 diff --git a/src/ipa/simple/data/ov9760.yaml b/src/ipa/simple/data/ov9760.yaml
 new file mode 100644
-index 0000000..99b05a2
+index 0000000..90ae1b1
 --- /dev/null
 +++ b/src/ipa/simple/data/ov9760.yaml
-@@ -0,0 +1,10 @@
+@@ -0,0 +1,13 @@
 +# SPDX-License-Identifier: CC0-1.0
 +%YAML 1.1
 +---
 +version: 1
 +algorithms:
 +  - BlackLevel:
++      # 0x50 at 10 bits: a little above the sensor's 0x40, which the
++      # small lens's flare lifts in daylight (Lenovo B8000-H).
++      blackLevel: 5120
 +  - Awb:
 +  - Adjust:
 +  - Agc:
