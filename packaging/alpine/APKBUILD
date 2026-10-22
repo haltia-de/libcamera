@@ -10,7 +10,7 @@
 # OpenGL ES 3, which the tablet's SGX544 cannot give programs.
 pkgname=libcamera
 _pkgver=0.7.1
-pkgver=${_pkgver}_p1
+pkgver=0.7.1_p1
 pkgrel=0
 pkgdesc="Linux camera framework"
 url="https://libcamera.org/"
